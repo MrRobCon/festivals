@@ -1,5 +1,5 @@
 <?php
-define('APP_URL', 'http://localhost/htdocs/festivals');
+define('APP_URL', 'http://localhost/festivals');
 
 define('DB_SERVER', 'localhost');
 define('DB_DATABASE', 'festivals');
