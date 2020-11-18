@@ -14,27 +14,27 @@
     <div class="container">
       <?php require 'include/header.php'; ?>
       <?php require 'include/navbar.php'; ?>
+      <?php require "include/flash.php"; ?>
       <main role="main">
-        <?php require "include/exception.php"; ?>
         <h1>Register Form</h1>
         <form name='register' action="register.php" method="post">
 
           <div class="form-field">
             <label for="email">Email:</label>
-            <input type="text" name="email" id="email" value="<?= $request->input("email") ?>" />
-            <span class="error"><?= $request->error("email") ?></span>
+            <input type="text" name="email" id="email" value="<?= old("email") ?>" />
+            <span class="error"><?= error("email") ?></span>
           </div>
 
           <div class="form-field">
             <label for="password">Password:</label>
             <input type="password" name="password" id="password" />
-            <span class="error"></span>
+            <span class="error"><?= error("password") ?></span>
           </div>
 
           <div class="form-field">
             <label for="name">Name:</label>
-            <input type="text" name="name" id="name" value="<?= $request->input("name") ?>" />
-            <span class="error"><?= $request->error("name") ?></span>
+            <input type="text" name="name" id="name" value="<?= old("name") ?>" />
+            <span class="error"><?= error("name") ?></span>
           </div>
 
           <div class="form-field">

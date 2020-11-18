@@ -25,19 +25,27 @@ try {
     }
   } 
 }
-catch(PDOException $ex) {
-  $request->set_exception("Database exception: " . $ex->getMessage());
-}
 catch(Exception $ex) {
-  $request->set_exception("Exception: " . $ex->getMessage());    
+  $request->session()->set("flash_message", $ex->getMessage());
+  $request->session()->set("flash_message_class", "alert-warning");
+  $request->session()->set("flash_data", $request->all());
+  $request->session()->set("flash_errors", $request->errors());
+
+  $request->redirect("/register-form.php");   
 }
 
 if ($request->is_valid()) {
-  $request->session()->set("email", $user->email);
-  $request->session()->set("name", $user->name);
+  $request->session()->set('email', $user->email);
+  $request->session()->set('name', $user->name);
+  $request->session()->forget("flash_data");
+  $request->session()->forget("flash_errors");
+
   $request->redirect("/home.php");
 }
 else {
-  require "register-form.php";
+  $request->session()->set("flash_data", $request->all());
+  $request->session()->set("flash_errors", $request->errors());
+
+  $request->redirect("/register-form.php");
 }
 ?>

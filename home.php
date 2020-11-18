@@ -19,6 +19,7 @@ if (!$request->is_logged_in()) {
     <div class="container">
       <?php require 'include/header.php'; ?>
       <?php require 'include/navbar.php'; ?>
+      <?php require "include/flash.php"; ?>
       <main role="main">
         <h1>Home</h1>
         <p>Welcome, <?= $request->session()->get("name") ?>. This is your home page!</p>

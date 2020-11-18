@@ -19,21 +19,21 @@ if ($request->is_logged_in()) {
     <div class="container">
       <?php require 'include/header.php'; ?>
       <?php require 'include/navbar.php'; ?>
+      <?php require "include/flash.php"; ?>
       <main role="main">
-        <?php require "include/exception.php"; ?>
         <h1>Login Form</h1>
         <form name='login' action="login.php" method="post">
 
           <div class="form-field">
             <label for="email">Email:</label>
-            <input type="text" name="email" id="email" value="<?= $request->input("email") ?>" />
-            <span class="error"><?= $request->error("email") ?></span>
+            <input type="text" name="email" id="email" value="<?= old("email") ?>" />
+            <span class="error"><?= error("email") ?></span>
           </div>
 
           <div class="form-field">
             <label for="password">Password:</label>
             <input type="password" name="password" id="password" />
-            <span class="error"></span>
+            <span class="error"><?= error("password") ?></span>
           </div>
 
           <div class="form-field">

@@ -7,7 +7,6 @@ class HttpRequest {
   private $data = null;
   private $session = null;
   private $errors = null;
-  private $exception = null;
 
   public function __construct($data = null) {
     $this->init_request_method();
@@ -70,6 +69,9 @@ class HttpRequest {
   // private validation methods
   //-----------------------------------------------------------------------------------------------
   private function is_present($key) {
+    if (!array_key_exists($key, $this->data)) {
+      return FALSE;
+    }
     $value = $this->data[$key];
   	if (is_array($value)) {
       return TRUE;
@@ -80,6 +82,9 @@ class HttpRequest {
     }
   }
   private function has_length($key, $options=[]) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $value = $this->data[$key];
   	if(isset($options['max']) && (strlen($value) > (int)$options['max'])) {
   		return false;
@@ -93,24 +98,39 @@ class HttpRequest {
   	return true;
   }
   private function has_no_html_tags($key) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $value = $this->data[$key];
     return strcmp($value, strip_tags($value)) === 0;
   }
   private function is_safe_email($key) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $email = $this->data[$key];
     $sanitized_email = filter_var($email, FILTER_SANITIZE_EMAIL);
     return strcmp($email, $sanitized_email) === 0;
   }
   private function is_valid_email($key) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $email = $this->data[$key];
     return filter_var($email, FILTER_VALIDATE_EMAIL) !== FALSE;
   }
   private function is_safe_float($key) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $float = $this->data[$key];
     $sanitized_float = filter_var($float, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
     return strcmp($float, $sanitized_float) === 0;
   }
   private function is_valid_float($key) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $float = $this->data[$key];
     $options = array(
       'options' => [ "decimal" => "."],
@@ -119,28 +139,46 @@ class HttpRequest {
     return filter_var($float, FILTER_VALIDATE_FLOAT, $options) !== FALSE;
   }
   private function is_safe_integer($key) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $integer = $this->data[$key];
     $sanitized_integer = filter_var($integer, FILTER_SANITIZE_NUMBER_INT);
     return strcmp($integer, $sanitized_integer) === 0;
   }
   private function is_valid_integer($key, $range = []) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $integer = $this->data[$key];
     $options = array("options" => $range);
     return filter_var($integer, FILTER_VALIDATE_INT, $options) !== FALSE;
   }
   private function is_valid_boolean($key) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $boolean = $this->data[$key];
     return filter_var($boolean, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== NULL;
   }
   private function is_match($key, $regex) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $value = $this->data[$key];
     return preg_match($regex, $value) === 1;
   }
   private function is_element($key, $set) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $value = $this->data[$key];
     return in_array($value, $set);
   }
   private function is_subset($key, $set) {
+    if (!array_key_exists($key, $this->data)) {
+      return TRUE;
+    }
     $values = $this->data[$key];
     if (!is_array($values)) {
       return FALSE;
@@ -296,11 +334,11 @@ class HttpRequest {
     return $valid;
   }
   private function validate_rule_match($key, $options) {
-    if (count($options) !== 1 || preg_match($options[0], "") === FALSE) {
+    $regex = implode(":", $options);
+    if (count($options) === 0 || preg_match($regex, "") === FALSE) {
       throw new Exception("Error in validation rule for " . $key);
     }
     $valid = TRUE;
-    $regex = $options[0];
     if (!$this->is_match($key, $regex)) {
       $valid = FALSE;
       $this->errors[$key] = "Please enter string that matches the pattern " . $regex . " for " . $key;
@@ -359,10 +397,23 @@ class HttpRequest {
     }
     return $valid;
   }
+  private function set_allowed_data($allowed_params=[]) {
+    $allowed_array = [];
+    foreach($allowed_params as $param) {
+      if(isset($this->data[$param])) {
+        $allowed_array[$param] = $this->data[$param];
+      }
+      else {
+        $allowed_array[$param] = NULL;
+      }
+    }
+    $this->data = $allowed_array;
+  }
   //-----------------------------------------------------------------------------------------------
   // public methods
   //-----------------------------------------------------------------------------------------------
   public function validate($rules=[]) {
+    $this->set_allowed_data(array_keys($rules));
     $this->errors = [];
     foreach ($rules as $field_name => $field_rules_str) {
       $field_rules_array = explode("|", $field_rules_str);
@@ -379,6 +430,9 @@ class HttpRequest {
   public function is_logged_in() {
     return $this->session()->has('email');
   }
+  public function has_input($key) {
+    return (isset($this->data) && is_array($this->data) && array_key_exists($key, $this->data));
+  }
   public function input($key) {
     if (isset($this->data) && is_array($this->data) && array_key_exists($key, $this->data)) {
       return $this->data[$key];
@@ -387,8 +441,14 @@ class HttpRequest {
       return null;
     }
   }
+  public function all() {
+    return $this->data;
+  }
   public function is_valid() {
-    return isset($this->errors) && is_array($this->errors) && empty($this->errors) && !$this->has_exception();
+    return isset($this->errors) && is_array($this->errors) && empty($this->errors);
+  }
+  public function has_error($key) {
+    return (isset($this->errors) && is_array($this->errors) && array_key_exists($key, $this->errors));
   }
   public function error($key) {
     if (isset($this->errors) && is_array($this->errors) && array_key_exists($key, $this->errors)) {
@@ -398,32 +458,14 @@ class HttpRequest {
       return null;
     }
   }
+  public function errors() {
+    return $this->errors;
+  }
+  
   public function set_error($key, $value) {
-    if (isset($this->errors) && is_array($this->errors) && !array_key_exists($key, $this->errors)) {
+    if (isset($this->errors) && is_array($this->errors)) {
       $this->errors[$key] = $value;
     }
-  }
-  public function chosen($key, $search) {
-    $chosen = FALSE;
-    if (isset($this->data) && is_array($this->data) && array_key_exists($key, $this->data)) {
-      $value = $this->data[$key];
-      if (is_array($value)) {
-        $chosen = in_array($search, $value);
-      }
-      else if (is_string($value)) {
-        $chosen = (strcmp($search, $value) === 0);
-      }
-    }
-    return $chosen;
-  }
-  public function has_exception() {
-    return $this->exception !== null;
-  }
-  public function get_exception() {
-    return $this->exception;
-  }
-  public function set_exception($message) {
-    $this->exception = $message;
   }
   public function redirect($url) {
     header("Location: ".APP_URL.$url);
