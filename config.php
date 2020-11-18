@@ -1,5 +1,5 @@
 <?php
-define('APP_URL', 'http://localhost/IADT-CC-Y2/festivals');
+define('APP_URL', 'http://localhost/htdocs/festivals');
 
 define('DB_SERVER', 'localhost');
 define('DB_DATABASE', 'festivals');
